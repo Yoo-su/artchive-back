@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Book } from '../entities/book.entity';
-import { PostStatus, UsedBookPost } from '../entities/used-book.entity';
+import { PostStatus, UsedBookPost } from '../entities/used-book-post.entity';
 import { CreateBookPostDto } from '../dtos/create-book-post.dto';
 import { BookInfoDto } from '../dtos/book-info.dto';
 import { UserService } from '../../user/services/user.service';

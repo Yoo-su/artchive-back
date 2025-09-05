@@ -6,7 +6,7 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { UsedBookPost } from './used-book.entity';
+import { UsedBookPost } from './used-book-post.entity';
 
 @Entity({ name: 'books' })
 export class Book {

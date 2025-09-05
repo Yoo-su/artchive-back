@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { SocialLoginDto } from '@/features/auth/dtos/social-login.dto';
-import { UsedBookPost } from '@/features/book/entities/used-book.entity';
+import { UsedBookPost } from '@/features/book/entities/used-book-post.entity';
 
 @Injectable()
 export class UserService {

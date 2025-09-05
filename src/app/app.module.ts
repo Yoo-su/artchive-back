@@ -6,8 +6,9 @@ import { UserModule } from '@/features/user/user.module';
 import { User } from '@/features/user/entities/user.entity';
 import { LoggerMiddleware } from '@/shared/middlewares/logger.middleware';
 import { BookModule } from '@/features/book/book.module';
-import { UsedBookPost } from '@/features/book/entities/used-book.entity';
+import { UsedBookPost } from '@/features/book/entities/used-book-post.entity';
 import { Book } from '@/features/book/entities/book.entity';
+import { ChatModule } from '@/features/chat/chat.module';
 
 @Module({
   imports: [
@@ -32,13 +33,14 @@ import { Book } from '@/features/book/entities/book.entity';
         database: configService.get<string>('DB_NAME'),
         entities: [User, Book, UsedBookPost], // User 엔티티만 사용하므로 직접 지정
         synchronize: configService.get<string>('NODE_ENV') !== 'production', // 개발 환경에서만 true로 설정
+        autoLoadEntities: true,
       }),
     }),
-
     // 3. 기능별 모듈 등록
     AuthModule,
     UserModule,
     BookModule,
+    ChatModule,
   ],
   controllers: [],
   providers: [],

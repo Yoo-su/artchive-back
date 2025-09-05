@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BookController } from './controllers/book.controller';
 import { BookService } from './services/book.service';
 import { Book } from './entities/book.entity';
-import { UsedBookPost } from './entities/used-book.entity';
+import { UsedBookPost } from './entities/used-book-post.entity';
 import { UserModule } from '../user/user.module';
 
 @Module({

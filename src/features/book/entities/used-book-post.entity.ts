@@ -4,11 +4,13 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '@/features/user/entities/user.entity';
 import { Book } from './book.entity';
+import { ChatRoom } from '@/features/chat/entities/chat-room.entity';
 
 export enum PostStatus {
   FOR_SALE = 'FOR_SALE', // 판매중
@@ -64,4 +66,8 @@ export class UsedBookPost {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  // 하나의 판매글은 여러개의 채팅방을 가질 수 있습니다.
+  @OneToMany(() => ChatRoom, (chatRoom) => chatRoom.usedBookPost)
+  chatRooms: ChatRoom[];
 }

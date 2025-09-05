@@ -1,4 +1,6 @@
-import { UsedBookPost } from '@/features/book/entities/used-book.entity';
+import { UsedBookPost } from '@/features/book/entities/used-book-post.entity';
+import { ChatParticipant } from '@/features/chat/entities/chat-participant.entity';
+import { ReadReceipt } from '@/features/chat/entities/read-receipt.entity';
 import {
   Entity,
   Column,
@@ -41,4 +43,10 @@ export class User {
 
   @OneToMany(() => UsedBookPost, (post) => post.user)
   usedBookPosts: UsedBookPost[];
+
+  @OneToMany(() => ChatParticipant, (participant) => participant.user)
+  chatParticipants: ChatParticipant[];
+
+  @OneToMany(() => ReadReceipt, (receipt) => receipt.user)
+  readReceipts: ReadReceipt[];
 }
