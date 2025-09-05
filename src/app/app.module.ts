@@ -26,12 +26,8 @@ import { ChatModule } from '@/features/chat/chat.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get<string>('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
-        username: configService.get<string>('DB_USER'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_NAME'),
-        entities: [User, Book, UsedBookPost], // User 엔티티만 사용하므로 직접 지정
+        url: configService.get<string>('DATABASE_URL'),
+        entities: [User, Book, UsedBookPost],
         synchronize: configService.get<string>('NODE_ENV') !== 'production', // 개발 환경에서만 true로 설정
         autoLoadEntities: true,
       }),
