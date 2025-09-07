@@ -31,15 +31,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // 클라이언트 연결 시 인증 처리
   async handleConnection(client: Socket) {
     try {
-      // ✨ [수정됨] 옵셔널 체이닝(?.)과 nullish coalescing(??)을 사용하여 안전하게 토큰 추출
       const token = client.handshake.headers.authorization?.split(' ')[1];
 
       if (!token) {
         throw new Error('Missing authentication token');
       }
 
-      // 💡 참고: AuthService에 verifyUserByToken 메서드를 구현해야 합니다.
-      // 이 메서드는 JWT 토큰을 검증하고 유저 정보를 반환합니다.
+      // JWT 토큰을 검증하고 유저 정보를 반환합니다.
       const user = await this.authService.verifyUserByToken(token);
       if (!user) {
         throw new Error('Invalid token');
@@ -78,16 +76,72 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // 메시지 전송
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
+    // ⭐️ 마지막 인자로 ack (callback 함수) 추가
     @MessageBody() data: { roomId: number; content: string },
     @ConnectedSocket() client: Socket,
   ) {
     const user = client.data.user;
     const { roomId, content } = data;
+    const ack = arguments[arguments.length - 1]; // ack 함수 가져오기
 
-    // 1. 메시지를 DB에 저장
-    const message = await this.chatService.saveMessage(content, roomId, user);
+    try {
+      const message = await this.chatService.saveMessage(content, roomId, user);
+      this.server.to(String(roomId)).emit('newMessage', message);
 
-    // 2. 해당 룸의 모든 클라이언트에게 메시지 전송 (보낸 사람 포함)
-    this.server.to(String(roomId)).emit('newMessage', message);
+      // ⭐️ 성공 시 클라이언트에 성공 응답 전송
+      if (typeof ack === 'function') {
+        ack({ status: 'ok', message });
+      }
+    } catch (error) {
+      // ⭐️ 실패 시 클라이언트에 에러 응답 전송
+      if (typeof ack === 'function') {
+        ack({ status: 'error', error: error.message });
+      }
+      this.logger.error(
+        `Failed to save message for user ${user.id} in room ${roomId}: ${error.message}`,
+      );
+    }
+  }
+
+  // 클라이언트가 보내는 모든 채팅방 구독 요청 처리
+  @SubscribeMessage('subscribeToAllRooms')
+  handleSubscribeToAllRooms(
+    @MessageBody() roomIds: number[],
+    @ConnectedSocket() client: Socket,
+  ) {
+    if (!Array.isArray(roomIds)) {
+      return;
+    }
+    const roomIdsAsStrings = roomIds.map(String);
+    client.join(roomIdsAsStrings);
+    this.logger.log(
+      `Client ${client.id} subscribed to rooms: [${roomIdsAsStrings.join(', ')}]`,
+    );
+  }
+
+  // 입력 시작 이벤트
+  @SubscribeMessage('startTyping')
+  handleStartTyping(
+    @MessageBody() data: { roomId: number },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const user = client.data.user;
+    // 자신을 제외한 룸의 다른 사람들에게만 이벤트 전송
+    client.to(String(data.roomId)).emit('typing', {
+      nickname: user.nickname,
+      isTyping: true,
+    });
+  }
+
+  // 입력 중지 이벤트
+  @SubscribeMessage('stopTyping')
+  handleStopTyping(
+    @MessageBody() data: { roomId: number },
+    @ConnectedSocket() client: Socket,
+  ) {
+    // 자신을 제외한 룸의 다른 사람들에게만 이벤트 전송
+    client.to(String(data.roomId)).emit('typing', {
+      isTyping: false,
+    });
   }
 }
