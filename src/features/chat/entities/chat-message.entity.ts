@@ -21,8 +21,8 @@ export class ChatMessage {
   @CreateDateColumn()
   createdAt: Date;
 
-  @ManyToOne(() => User)
-  sender: User;
+  @ManyToOne(() => User, { nullable: true })
+  sender: User | null;
 
   @ManyToOne(() => ChatRoom, (chatRoom) => chatRoom.messages)
   chatRoom: ChatRoom;

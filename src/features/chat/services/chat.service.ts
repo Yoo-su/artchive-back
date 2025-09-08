@@ -1,7 +1,9 @@
 import {
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
@@ -11,6 +13,7 @@ import { ChatMessage } from '../entities/chat-message.entity';
 import { User } from '@/features/user/entities/user.entity';
 import { UsedBookPost } from '@/features/book/entities/used-book-post.entity';
 import { ReadReceipt } from '../entities/read-receipt.entity';
+import { ChatGateway } from '../gateways/chat.gateway';
 
 @Injectable()
 export class ChatService {
@@ -25,6 +28,8 @@ export class ChatService {
     private readonly usedBookPostRepository: Repository<UsedBookPost>,
     @InjectRepository(ReadReceipt)
     private readonly readReceiptRepository: Repository<ReadReceipt>,
+    @Inject(forwardRef(() => ChatGateway))
+    private readonly chatGateway: ChatGateway,
   ) {}
 
   async findOrCreateRoom(postId: number, buyerId: number): Promise<ChatRoom> {
@@ -78,7 +83,7 @@ export class ChatService {
       .innerJoin(
         'room.participants',
         'participant',
-        'participant.userId = :userId',
+        'participant.userId = :userId AND participant.isActive = true',
         { userId },
       )
       .leftJoinAndSelect('room.participants', 'allParticipants')
@@ -202,5 +207,42 @@ export class ChatService {
     await this.readReceiptRepository.save(newReceipts);
 
     return { success: true, message: 'Messages marked as read.' };
+  }
+
+  /**
+   * ✨ [신규] 채팅방 나가기
+   * @param roomId - 나갈 채팅방 ID
+   * @param userId - 나가는 사용자 ID
+   */
+  async leaveRoom(roomId: number, userId: number) {
+    // 1. 내 참여 정보 조회
+    const participant = await this.chatParticipantRepository.findOne({
+      where: { chatRoom: { id: roomId }, user: { id: userId } },
+      relations: ['user'],
+    });
+
+    if (!participant || !participant.isActive) {
+      throw new NotFoundException('Chat room not found or already left.');
+    }
+
+    // 2. 내 참여 상태를 false로 변경
+    participant.isActive = false;
+    await this.chatParticipantRepository.save(participant);
+
+    // 3. 시스템 메시지 생성 ("OOO님이 나갔습니다.")
+    const systemMessage = this.chatMessageRepository.create({
+      chatRoom: { id: roomId },
+      content: `${participant.user.nickname}님이 나갔습니다.`,
+      sender: null, // sender가 null이면 시스템 메시지로 간주
+    });
+    await this.chatMessageRepository.save(systemMessage);
+
+    // 4. 상대방에게 실시간으로 "userLeft" 이벤트 전송
+    this.chatGateway.server.to(String(roomId)).emit('userLeft', {
+      roomId,
+      message: systemMessage,
+    });
+
+    return { success: true, message: 'Successfully left the chat room.' };
   }
 }
