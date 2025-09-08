@@ -9,6 +9,9 @@ import {
   ParseIntPipe,
   Get,
   Query,
+  Delete,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { BookService } from '../services/book.service';
@@ -16,6 +19,7 @@ import { CreateBookPostDto } from '../dtos/create-book-post.dto';
 import { Request } from 'express';
 import { UpdatePostStatusDto } from '../../user/dtos/update-post-status.dto';
 import { GetBookPostsQueryDto } from '../dtos/get-book-posts-query.dto';
+import { UpdateBookPostDto } from '../dtos/update-book-post.dto';
 
 @Controller('book')
 export class BookController {
@@ -78,5 +82,42 @@ export class BookController {
     @Query() query: GetBookPostsQueryDto,
   ) {
     return this.bookService.findPostsByIsbn(isbn, query);
+  }
+
+  /**
+   * 판매글의 내용을 업데이트하는 엔드포인트
+   */
+  @Patch('posts/:id')
+  @UseGuards(AuthGuard('jwt'))
+  async updateBookPost(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+    @Body() updateBookPostDto: UpdateBookPostDto,
+  ) {
+    const userId = (req.user as any).id;
+    const updatedPost = await this.bookService.updateUsedBookPost(
+      id,
+      userId,
+      updateBookPostDto,
+    );
+    return {
+      success: true,
+      data: updatedPost,
+    };
+  }
+
+  /**
+   * 판매글을 삭제하는 엔드포인트
+   */
+  @Delete('posts/:id')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.NO_CONTENT) // 성공 시 204 No Content 응답
+  async deleteBookPost(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+  ) {
+    const userId = (req.user as any).id;
+    await this.bookService.deleteUsedBookPost(id, userId);
+    return;
   }
 }

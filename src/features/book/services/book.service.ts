@@ -11,6 +11,7 @@ import { CreateBookPostDto } from '../dtos/create-book-post.dto';
 import { BookInfoDto } from '../dtos/book-info.dto';
 import { UserService } from '../../user/services/user.service';
 import { GetBookPostsQueryDto } from '../dtos/get-book-posts-query.dto';
+import { UpdateBookPostDto } from '../dtos/update-book-post.dto';
 
 @Injectable()
 export class BookService {
@@ -53,7 +54,7 @@ export class BookService {
   }
 
   /**
-   * ✨ [신규] 특정 판매글의 상태를 업데이트합니다.
+   * 특정 판매글의 상태를 업데이트합니다.
    * @param postId - 업데이트할 게시글 ID
    * @param userId - 요청을 보낸 사용자 ID (소유권 확인용)
    * @param status - 변경할 새로운 상태
@@ -137,5 +138,65 @@ export class BookService {
       page,
       hasNextPage,
     };
+  }
+
+  /**
+   * 특정 판매글의 정보를 업데이트합니다.
+   * @param postId - 업데이트할 게시글 ID
+   * @param userId - 요청을 보낸 사용자 ID (소유권 확인용)
+   * @param updateBookPostDto - 업데이트할 게시글 정보
+   * @returns 업데이트된 게시글 정보
+   */
+  async updateUsedBookPost(
+    postId: number,
+    userId: number,
+    updateBookPostDto: UpdateBookPostDto,
+  ): Promise<UsedBookPost> {
+    const post = await this.usedBookPostRepository.findOne({
+      where: { id: postId },
+      relations: ['user'], // 소유권 확인을 위해 user 정보를 함께 조회
+    });
+
+    if (!post) {
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
+    if (post.user.id !== userId) {
+      throw new ForbiddenException('게시글을 수정할 권한이 없습니다.');
+    }
+
+    // DTO의 내용과 기존 게시글 데이터를 병합합니다.
+    // DTO에 포함된 필드만 업데이트됩니다.
+    const updatedPost = this.usedBookPostRepository.merge(
+      post,
+      updateBookPostDto,
+    );
+
+    return this.usedBookPostRepository.save(updatedPost);
+  }
+
+  /**
+   * 특정 판매글을 삭제합니다.
+   * @param postId - 삭제할 게시글 ID
+   * @param userId - 요청을 보낸 사용자 ID (소유권 확인용)
+   */
+  async deleteUsedBookPost(postId: number, userId: number): Promise<void> {
+    const post = await this.usedBookPostRepository.findOne({
+      where: { id: postId },
+      relations: ['user'],
+    });
+
+    if (!post) {
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
+    if (post.user.id !== userId) {
+      throw new ForbiddenException('게시글을 삭제할 권한이 없습니다.');
+    }
+
+    // 참고: used_book_posts와 연관된 chat_rooms, chat_participants 등은
+    // entity의 onDelete: 'CASCADE' 설정에 의해 DB 레벨에서 연쇄적으로 삭제될 수 있습니다.
+    // 해당 설정이 없다면 여기서 직접 관련 데이터를 삭제하는 로직이 필요합니다.
+    await this.usedBookPostRepository.remove(post);
   }
 }
