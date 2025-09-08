@@ -199,4 +199,16 @@ export class BookService {
     // 해당 설정이 없다면 여기서 직접 관련 데이터를 삭제하는 로직이 필요합니다.
     await this.usedBookPostRepository.remove(post);
   }
+
+  /**
+   * 가장 최근에 등록된 중고책 판매글을 조회합니다. (최대 10개)
+   */
+  async findRecentPosts(): Promise<UsedBookPost[]> {
+    return this.usedBookPostRepository.find({
+      where: { status: PostStatus.FOR_SALE }, // 판매중인 게시글만 조회
+      order: { createdAt: 'DESC' },
+      take: 10,
+      relations: ['user', 'book'], // 작성자, 책 정보 포함
+    });
+  }
 }

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -58,5 +59,17 @@ export class ChatController {
   ) {
     const userId = req.user.id;
     return this.chatService.markMessagesAsRead(roomId, userId);
+  }
+
+  /**
+   * 특정 채팅방을 나가는 API
+   */
+  @Delete('rooms/:roomId')
+  leaveRoom(
+    @Param('roomId', ParseIntPipe) roomId: number,
+    @Req() req: Request,
+  ) {
+    const userId = req.user.id;
+    return this.chatService.leaveRoom(roomId, userId);
   }
 }
