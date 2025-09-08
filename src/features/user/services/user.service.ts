@@ -38,7 +38,7 @@ export class UserService {
   }
 
   /**
-   * ✨ [신규] 특정 사용자가 작성한 모든 중고책 판매글을 조회합니다.
+   * 특정 사용자가 작성한 모든 중고책 판매글을 조회합니다.
    * @param userId - 사용자 ID
    * @returns 사용자의 판매글 목록
    */

@@ -19,7 +19,7 @@ export class UserController {
   }
 
   /**
-   * ✨ [신규] 내가 등록한 모든 판매글을 조회하는 엔드포인트
+   * 내가 등록한 모든 판매글을 조회하는 엔드포인트
    */
   @Get('my-posts')
   @UseGuards(AuthGuard('jwt'))
