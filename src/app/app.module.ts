@@ -27,10 +27,9 @@ import { ChatModule } from '@/features/chat/chat.module';
         synchronize: configService.get<string>('NODE_ENV') !== 'production', // 개발 환경에서만 true로 설정
         autoLoadEntities: true,
         extra: {
-          max: 10, // 최대 연결 수
-          min: 2, // 최소 연결 수
-          acquireTimeoutMillis: 60000,
-          idleTimeoutMillis: 600000,
+          max: 5,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 2000,
         },
         // SSL 설정 (Supabase 필수)
         ssl:
