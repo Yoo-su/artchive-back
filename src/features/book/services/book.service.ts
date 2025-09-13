@@ -96,7 +96,7 @@ export class BookService {
   }
 
   /**
-   *  ISBN과 쿼리 옵션으로 판매글 목록을 조회하는 메서드
+   * ISBN과 쿼리 옵션으로 판매글 목록을 조회하는 메서드
    */
   async findPostsByIsbn(isbn: string, queryDto: GetBookPostsQueryDto) {
     const { page, limit, city, district } = queryDto;
@@ -105,17 +105,22 @@ export class BookService {
       .createQueryBuilder('post')
       .where('post.bookIsbn = :isbn', { isbn })
       .leftJoinAndSelect('post.user', 'user') // 작성자 정보 포함
+      .leftJoinAndSelect('post.book', 'book') // 책 정보도 명시적으로 포함
       .select([
         'post.id',
         'post.title',
         'post.price',
         'post.status',
         'post.createdAt',
+        'post.updatedAt', // updatedAt 필드 추가
         'post.imageUrls',
+        'post.city',
+        'post.district',
         'user.id',
         'user.nickname',
         'user.profileImageUrl',
-      ]) // 필요한 필드만 선택하여 데이터 경량화
+        'book', // book 객체 전체 선택
+      ])
       .orderBy('post.createdAt', 'DESC') // 최신순으로 정렬
       .skip((page - 1) * limit)
       .take(limit);
