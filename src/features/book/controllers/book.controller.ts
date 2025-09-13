@@ -67,7 +67,6 @@ export class BookController {
   }
 
   /**
-   * ✨ [수정] /posts/:id 보다 먼저 선언되어야 합니다.
    * 최근 판매글 목록을 조회하는 엔드포인트
    */
   @Get('posts/recent')
