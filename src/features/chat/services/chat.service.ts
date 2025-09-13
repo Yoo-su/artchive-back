@@ -6,7 +6,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ChatRoom } from '../entities/chat-room.entity';
 import { ChatParticipant } from '../entities/chat-participant.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
@@ -32,6 +32,9 @@ export class ChatService {
     private readonly chatGateway: ChatGateway,
   ) {}
 
+  /**
+   * 채팅방을 찾거나 생성합니다.
+   */
   async findOrCreateRoom(postId: number, buyerId: number): Promise<ChatRoom> {
     const post = await this.usedBookPostRepository.findOne({
       where: { id: postId },
@@ -44,27 +47,56 @@ export class ChatService {
     if (buyerId === sellerId) {
       throw new ForbiddenException('You cannot start a chat with yourself.');
     }
+
+    // 1. 참여자들의 ID를 기반으로 기존 채팅방을 찾습니다.
     const existingRoom = await this.chatRoomRepository
       .createQueryBuilder('room')
-      .innerJoin('room.participants', 'p1', 'p1.userId = :buyerId', { buyerId })
+      .innerJoin('room.participants', 'p1', 'p1.userId = :buyerId', {
+        buyerId,
+      })
       .innerJoin('room.participants', 'p2', 'p2.userId = :sellerId', {
         sellerId,
       })
       .where('room.usedBookPost.id = :postId', { postId })
+      .leftJoinAndSelect('room.participants', 'allParticipants') // 모든 참여자 정보 로드
       .getOne();
+
+    // 2. 채팅방이 이미 존재할 경우
     if (existingRoom) {
+      // 참여자들의 'isActive' 상태를 확인하고, false이면 true로 변경하여 재활성화합니다.
+      const participantsToUpdate = existingRoom.participants.filter(
+        (p) => !p.isActive,
+      );
+
+      if (participantsToUpdate.length > 0) {
+        for (const participant of participantsToUpdate) {
+          participant.isActive = true;
+        }
+        await this.chatParticipantRepository.save(participantsToUpdate);
+
+        // 방의 updatedAt을 갱신하여 채팅 목록 상단에 노출되도록 합니다.
+        existingRoom.updatedAt = new Date();
+        await this.chatRoomRepository.save(existingRoom);
+      }
+
       return existingRoom;
     }
+
+    // 3. 채팅방이 존재하지 않을 경우 새로 생성합니다.
     const newRoom = this.chatRoomRepository.create({ usedBookPost: post });
     await this.chatRoomRepository.save(newRoom);
+
     const buyerParticipant = this.chatParticipantRepository.create({
       chatRoom: newRoom,
       user: { id: buyerId } as User,
+      isActive: true, // 새로 만들 때는 항상 활성 상태
     });
     const sellerParticipant = this.chatParticipantRepository.create({
       chatRoom: newRoom,
       user: { id: sellerId } as User,
+      isActive: true, // 새로 만들 때는 항상 활성 상태
     });
+
     await this.chatParticipantRepository.save([
       buyerParticipant,
       sellerParticipant,
@@ -210,7 +242,7 @@ export class ChatService {
   }
 
   /**
-   * ✨ [신규] 채팅방 나가기
+   * 채팅방 나가기
    * @param roomId - 나갈 채팅방 ID
    * @param userId - 나가는 사용자 ID
    */
