@@ -9,6 +9,7 @@ import { BookModule } from '@/features/book/book.module';
 import { UsedBookPost } from '@/features/book/entities/used-book-post.entity';
 import { Book } from '@/features/book/entities/book.entity';
 import { ChatModule } from '@/features/chat/chat.module';
+import { LlmModule } from '@/features/llm/llm.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ChatModule } from '@/features/chat/chat.module';
     UserModule,
     BookModule,
     ChatModule,
+    LlmModule,
   ],
   controllers: [],
   providers: [],
