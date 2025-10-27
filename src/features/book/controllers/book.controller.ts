@@ -38,12 +38,12 @@ export class BookController {
     );
     return {
       success: true,
-      data: newPost,
+      post: newPost,
     };
   }
 
   /**
-   * ✨ 판매글의 상태를 업데이트하는 엔드포인트
+   * 판매글의 상태를 업데이트하는 엔드포인트
    * @param id - 게시글 ID
    * @param updatePostStatusDto - 변경할 상태 정보
    */
@@ -62,7 +62,7 @@ export class BookController {
     );
     return {
       success: true,
-      data: updatedPost,
+      post: updatedPost,
     };
   }
 
@@ -110,7 +110,7 @@ export class BookController {
     );
     return {
       success: true,
-      data: updatedPost,
+      post: updatedPost,
     };
   }
 

@@ -28,7 +28,7 @@ export class UserController {
     const posts = await this.userService.findMyPosts(userId);
     return {
       success: true,
-      data: posts,
+      posts: posts,
     };
   }
 }

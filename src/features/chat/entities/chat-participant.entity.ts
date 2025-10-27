@@ -20,7 +20,7 @@ export class ChatParticipant {
   @ManyToOne(() => ChatRoom, (chatRoom) => chatRoom.participants)
   chatRoom: ChatRoom;
 
-  // ✨ 사용자의 채팅방 참여 상태 (true: 참여중, false: 나감)
+  // 사용자의 채팅방 참여 상태 (true: 참여중, false: 나감)
   @Column({ default: true })
   isActive: boolean;
 }
