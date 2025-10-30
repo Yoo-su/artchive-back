@@ -6,7 +6,7 @@ import {
   ManyToOne,
   UpdateDateColumn,
 } from 'typeorm';
-import { UsedBookPost } from '@/features/book/entities/used-book-post.entity';
+import { UsedBookSale } from '@/features/book/entities/used-book-sale.entity';
 import { ChatParticipant } from './chat-participant.entity';
 import { ChatMessage } from './chat-message.entity';
 
@@ -18,8 +18,8 @@ export class ChatRoom {
   @CreateDateColumn()
   createdAt: Date;
 
-  @ManyToOne(() => UsedBookPost, (post) => post.chatRooms)
-  usedBookPost: UsedBookPost;
+  @ManyToOne(() => UsedBookSale, (sale) => sale.chatRooms)
+  usedBookSale: UsedBookSale;
 
   @OneToMany(() => ChatParticipant, (participant) => participant.chatRoom)
   participants: ChatParticipant[];

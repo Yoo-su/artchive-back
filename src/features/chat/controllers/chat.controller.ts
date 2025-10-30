@@ -42,11 +42,11 @@ export class ChatController {
    */
   @Post('rooms')
   findOrCreateRoom(
-    @Body('postId', ParseIntPipe) postId: number,
+    @Body('saleId', ParseIntPipe) saleId: number,
     @Req() req: Request,
   ) {
     const buyerId = req.user.id;
-    return this.chatService.findOrCreateRoom(postId, buyerId);
+    return this.chatService.findOrCreateRoom(saleId, buyerId);
   }
 
   /**

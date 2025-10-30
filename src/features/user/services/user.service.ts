@@ -3,15 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { SocialLoginDto } from '@/features/auth/dtos/social-login.dto';
-import { UsedBookPost } from '@/features/book/entities/used-book-post.entity';
+import { UsedBookSale } from '@/features/book/entities/used-book-sale.entity';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    @InjectRepository(UsedBookPost)
-    private readonly usedBookPostRepository: Repository<UsedBookPost>,
+    @InjectRepository(UsedBookSale)
+    private readonly usedBookSaleRepository: Repository<UsedBookSale>,
   ) {}
 
   async findByProviderId(
@@ -42,10 +42,10 @@ export class UserService {
    * @param userId - 사용자 ID
    * @returns 사용자의 판매글 목록
    */
-  async findMyPosts(userId: number): Promise<UsedBookPost[]> {
-    return this.usedBookPostRepository.find({
+  async findMySales(userId: number): Promise<UsedBookSale[]> {
+    return this.usedBookSaleRepository.find({
       where: { user: { id: userId } },
-      relations: ['book', 'user'], // 게시글과 연관된 책과 유저 정보를 함께 불러옵니다.
+      relations: ['book', 'user'], // 판매글과 연관된 책과 유저 정보를 함께 불러옵니다.
       order: { createdAt: 'DESC' }, // 최신순으로 정렬
     });
   }

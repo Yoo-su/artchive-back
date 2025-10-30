@@ -1,4 +1,4 @@
-import { UsedBookPost } from '@/features/book/entities/used-book-post.entity';
+import { UsedBookSale } from '@/features/book/entities/used-book-sale.entity';
 import { ChatParticipant } from '@/features/chat/entities/chat-participant.entity';
 import { ReadReceipt } from '@/features/chat/entities/read-receipt.entity';
 import {
@@ -41,8 +41,8 @@ export class User {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @OneToMany(() => UsedBookPost, (post) => post.user)
-  usedBookPosts: UsedBookPost[];
+  @OneToMany(() => UsedBookSale, (sale) => sale.user)
+  usedBookSales: UsedBookSale[];
 
   @OneToMany(() => ChatParticipant, (participant) => participant.user)
   chatParticipants: ChatParticipant[];

@@ -11,7 +11,7 @@ import { ChatRoom } from '../entities/chat-room.entity';
 import { ChatParticipant } from '../entities/chat-participant.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
 import { User } from '@/features/user/entities/user.entity';
-import { UsedBookPost } from '@/features/book/entities/used-book-post.entity';
+import { UsedBookSale } from '@/features/book/entities/used-book-sale.entity';
 import { ReadReceipt } from '../entities/read-receipt.entity';
 import { ChatGateway } from '../gateways/chat.gateway';
 
@@ -24,8 +24,8 @@ export class ChatService {
     private readonly chatParticipantRepository: Repository<ChatParticipant>,
     @InjectRepository(ChatMessage)
     private readonly chatMessageRepository: Repository<ChatMessage>,
-    @InjectRepository(UsedBookPost)
-    private readonly usedBookPostRepository: Repository<UsedBookPost>,
+    @InjectRepository(UsedBookSale)
+    private readonly usedBookSaleRepository: Repository<UsedBookSale>,
     @InjectRepository(ReadReceipt)
     private readonly readReceiptRepository: Repository<ReadReceipt>,
     @Inject(forwardRef(() => ChatGateway))
@@ -35,15 +35,15 @@ export class ChatService {
   /**
    * 채팅방을 찾거나 생성합니다.
    */
-  async findOrCreateRoom(postId: number, buyerId: number): Promise<ChatRoom> {
-    const post = await this.usedBookPostRepository.findOne({
-      where: { id: postId },
+  async findOrCreateRoom(saleId: number, buyerId: number): Promise<ChatRoom> {
+    const sale = await this.usedBookSaleRepository.findOne({
+      where: { id: saleId },
       relations: ['user'],
     });
-    if (!post) {
-      throw new NotFoundException('Post not found.');
+    if (!sale) {
+      throw new NotFoundException('Sale not found.');
     }
-    const sellerId = post.user.id;
+    const sellerId = sale.user.id;
     if (buyerId === sellerId) {
       throw new ForbiddenException('You cannot start a chat with yourself.');
     }
@@ -57,7 +57,7 @@ export class ChatService {
       .innerJoin('room.participants', 'p2', 'p2.userId = :sellerId', {
         sellerId,
       })
-      .where('room.usedBookPost.id = :postId', { postId })
+      .where('room.usedBookSale.id = :saleId', { saleId })
       .leftJoinAndSelect('room.participants', 'allParticipants') // 모든 참여자 정보 로드
       .getOne();
 
@@ -83,7 +83,7 @@ export class ChatService {
     }
 
     // 3. 채팅방이 존재하지 않을 경우 새로 생성합니다.
-    const newRoom = this.chatRoomRepository.create({ usedBookPost: post });
+    const newRoom = this.chatRoomRepository.create({ usedBookSale: sale });
     await this.chatRoomRepository.save(newRoom);
 
     const buyerParticipant = this.chatParticipantRepository.create({
@@ -120,8 +120,8 @@ export class ChatService {
       )
       .leftJoinAndSelect('room.participants', 'allParticipants')
       .leftJoinAndSelect('allParticipants.user', 'participantUser')
-      .leftJoinAndSelect('room.usedBookPost', 'post')
-      .leftJoinAndSelect('post.book', 'book')
+      .leftJoinAndSelect('room.usedBookSale', 'sale')
+      .leftJoinAndSelect('sale.book', 'book')
       .orderBy('room.updatedAt', 'DESC')
       .getMany();
 

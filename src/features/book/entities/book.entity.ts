@@ -6,7 +6,7 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { UsedBookPost } from './used-book-post.entity';
+import { UsedBookSale } from './used-book-sale.entity';
 
 @Entity({ name: 'books' })
 export class Book {
@@ -28,8 +28,8 @@ export class Book {
   @Column()
   image: string;
 
-  @OneToMany(() => UsedBookPost, (post) => post.book)
-  usedBookPosts: UsedBookPost[];
+  @OneToMany(() => UsedBookSale, (sale) => sale.book)
+  usedBookSales: UsedBookSale[];
 
   @CreateDateColumn()
   createdAt: Date;

@@ -9,7 +9,7 @@ import { ChatMessage } from './entities/chat-message.entity';
 import { AuthModule } from '../auth/auth.module';
 import { UserModule } from '../user/user.module';
 import { BookModule } from '../book/book.module';
-import { UsedBookPost } from '../book/entities/used-book-post.entity';
+import { UsedBookSale } from '../book/entities/used-book-sale.entity';
 import { ReadReceipt } from './entities/read-receipt.entity';
 
 @Module({
@@ -18,7 +18,7 @@ import { ReadReceipt } from './entities/read-receipt.entity';
       ChatRoom,
       ChatParticipant,
       ChatMessage,
-      UsedBookPost,
+      UsedBookSale,
       ReadReceipt,
     ]),
     AuthModule,
