@@ -21,14 +21,14 @@ export class UserController {
   /**
    * 내가 등록한 모든 판매글을 조회하는 엔드포인트
    */
-  @Get('my-posts')
+  @Get('my-sales')
   @UseGuards(AuthGuard('jwt'))
-  async getMyPosts(@Req() req: Request) {
+  async getMySales(@Req() req: Request) {
     const userId = (req.user as any).id;
-    const posts = await this.userService.findMyPosts(userId);
+    const sales = await this.userService.findMySales(userId);
     return {
       success: true,
-      posts: posts,
+      sales: sales,
     };
   }
 }

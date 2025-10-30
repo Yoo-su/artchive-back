@@ -12,7 +12,7 @@ import {
 } from 'class-validator';
 import { BookInfoDto } from './book-info.dto';
 
-export class CreateBookPostDto {
+export class CreateBookSaleDto {
   @IsString()
   @IsNotEmpty()
   @MinLength(5)

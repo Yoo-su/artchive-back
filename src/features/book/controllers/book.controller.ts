@@ -15,68 +15,68 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { BookService } from '../services/book.service';
-import { CreateBookPostDto } from '../dtos/create-book-post.dto';
+import { CreateBookSaleDto } from '../dtos/create-book-sale.dto';
 import { Request } from 'express';
-import { UpdatePostStatusDto } from '../../user/dtos/update-post-status.dto';
-import { GetBookPostsQueryDto } from '../dtos/get-book-posts-query.dto';
-import { UpdateBookPostDto } from '../dtos/update-book-post.dto';
+import { UpdateSaleStatusDto } from '../../user/dtos/update-sale-status.dto';
+import { GetBookSalesQueryDto } from '../dtos/get-book-sales-query.dto';
+import { UpdateBookSaleDto } from '../dtos/update-book-sale.dto';
 
 @Controller('book')
 export class BookController {
   constructor(private readonly bookService: BookService) {}
 
-  @Post('sell')
+  @Post('sale')
   @UseGuards(AuthGuard('jwt'))
-  async createUsedBookPost(
-    @Body() createBookPostDto: CreateBookPostDto,
+  async createUsedBookSale(
+    @Body() createBookSaleDto: CreateBookSaleDto,
     @Req() req: Request,
   ) {
     const userId = (req as any).user.id; // JwtStrategy에서 반환된 user 객체의 id
-    const newPost = await this.bookService.createUsedBookPost(
-      createBookPostDto,
+    const newSale = await this.bookService.createUsedBookSale(
+      createBookSaleDto,
       userId,
     );
     return {
       success: true,
-      post: newPost,
+      sale: newSale,
     };
   }
 
   /**
    * 판매글의 상태를 업데이트하는 엔드포인트
-   * @param id - 게시글 ID
-   * @param updatePostStatusDto - 변경할 상태 정보
+   * @param id - 판매글 ID
+   * @param updateSaleStatusDto - 변경할 상태 정보
    */
-  @Patch('posts/:id/status')
+  @Patch('sales/:id/status')
   @UseGuards(AuthGuard('jwt'))
-  async updateBookPostStatus(
+  async updateBookSaleStatus(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request,
-    @Body() updatePostStatusDto: UpdatePostStatusDto,
+    @Body() updateSaleStatusDto: UpdateSaleStatusDto,
   ) {
     const userId = (req.user as any).id;
-    const updatedPost = await this.bookService.updatePostStatus(
+    const updatedSale = await this.bookService.updateSaleStatus(
       id,
       userId,
-      updatePostStatusDto.status,
+      updateSaleStatusDto.status,
     );
     return {
       success: true,
-      post: updatedPost,
+      sale: updatedSale,
     };
   }
 
   /**
    * 최근 판매글 목록을 조회하는 엔드포인트
    */
-  @Get('posts/recent')
-  getRecentPosts() {
-    return this.bookService.findRecentPosts();
+  @Get('sales/recent')
+  getRecentSales() {
+    return this.bookService.findRecentSales();
   }
 
-  @Get('posts/:id')
-  getPostById(@Param('id', ParseIntPipe) id: number) {
-    return this.bookService.findPostById(id);
+  @Get('sales/:id')
+  getSaleById(@Param('id', ParseIntPipe) id: number) {
+    return this.bookService.findSaleById(id);
   }
 
   /**
@@ -84,48 +84,48 @@ export class BookController {
    * @param isbn - 책의 ISBN
    * @param query - 페이지네이션 및 필터링 옵션 (page, limit, city, district)
    */
-  @Get(':isbn/posts')
-  getBookPosts(
+  @Get(':isbn/sales')
+  getBookSales(
     @Param('isbn') isbn: string,
-    @Query() query: GetBookPostsQueryDto,
+    @Query() query: GetBookSalesQueryDto,
   ) {
-    return this.bookService.findPostsByIsbn(isbn, query);
+    return this.bookService.findSalesByIsbn(isbn, query);
   }
 
   /**
    * 판매글의 내용을 업데이트하는 엔드포인트
    */
-  @Patch('posts/:id')
+  @Patch('sales/:id')
   @UseGuards(AuthGuard('jwt'))
-  async updateBookPost(
+  async updateBookSale(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request,
-    @Body() updateBookPostDto: UpdateBookPostDto,
+    @Body() updateBookSaleDto: UpdateBookSaleDto,
   ) {
     const userId = (req.user as any).id;
-    const updatedPost = await this.bookService.updateUsedBookPost(
+    const updatedSale = await this.bookService.updateUsedBookSale(
       id,
       userId,
-      updateBookPostDto,
+      updateBookSaleDto,
     );
     return {
       success: true,
-      post: updatedPost,
+      sale: updatedSale,
     };
   }
 
   /**
    * 판매글을 삭제하는 엔드포인트
    */
-  @Delete('posts/:id')
+  @Delete('sales/:id')
   @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.NO_CONTENT) // 성공 시 204 No Content 응답
-  async deleteBookPost(
+  async deleteBookSale(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request,
   ) {
     const userId = (req.user as any).id;
-    await this.bookService.deleteUsedBookPost(id, userId);
+    await this.bookService.deleteUsedBookSale(id, userId);
     return;
   }
 }
