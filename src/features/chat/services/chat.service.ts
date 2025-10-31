@@ -68,7 +68,23 @@ export class ChatService {
         existingRoom.updatedAt = new Date();
         await this.chatRoomRepository.save(existingRoom);
       }
-      return existingRoom;
+
+      // 유저가 나갔다가 다시 들어온 경우, 필요한 관계들이 로드되지 않았을 수 있으므로 다시 조회합니다.
+      const reloadedRoom = await this.chatRoomRepository.findOne({
+        where: { id: existingRoom.id },
+        relations: [
+          'participants',
+          'participants.user',
+          'usedBookSale',
+          'usedBookSale.book',
+        ],
+      });
+
+      if (!reloadedRoom) {
+        throw new NotFoundException('Failed to retrieve the chat room.');
+      }
+
+      return reloadedRoom;
     }
 
     const newRoom = this.chatRoomRepository.create({ usedBookSale: sale });
