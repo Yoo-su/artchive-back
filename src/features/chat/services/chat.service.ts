@@ -33,9 +33,9 @@ export class ChatService {
   ) {}
 
   /**
-   * 채팅방을 찾거나 생성합니다.
+   * 판매글 id와 구매자 id로 채팅방을 찾아(생성해) 반환합니다.
    */
-  async findOrCreateRoom(saleId: number, buyerId: number): Promise<ChatRoom> {
+  async getChatRoom(saleId: number, buyerId: number): Promise<ChatRoom> {
     const sale = await this.usedBookSaleRepository.findOne({
       where: { id: saleId },
       relations: ['user'],
@@ -51,7 +51,9 @@ export class ChatService {
     const existingRoom = await this.chatRoomRepository
       .createQueryBuilder('room')
       .innerJoin('room.participants', 'p1', 'p1.userId = :buyerId', { buyerId })
-      .innerJoin('room.participants', 'p2', 'p2.userId = :sellerId', { sellerId })
+      .innerJoin('room.participants', 'p2', 'p2.userId = :sellerId', {
+        sellerId,
+      })
       .where('room.usedBookSale.id = :saleId', { saleId })
       .leftJoinAndSelect('room.participants', 'allParticipants')
       .getOne();
@@ -92,15 +94,7 @@ export class ChatService {
     this.chatGateway.joinRoom([buyerId, sellerId], newRoom.id);
 
     // 생성된 채팅방 정보를 반환합니다.
-    return this.chatRoomRepository.findOne({
-      where: { id: newRoom.id },
-      relations: [
-        'participants',
-        'participants.user',
-        'usedBookSale',
-        'usedBookSale.book',
-      ],
-    });
+    return newRoom;
   }
 
   /**
@@ -108,65 +102,64 @@ export class ChatService {
    * 각 채팅방의 마지막 메시지, 안 읽은 메시지 개수, 상대방 정보를 포함합니다.
    */
   async getChatRooms(userId: number) {
+    // 1. 현재 유저가 참여하고 있는 모든 채팅방을 찾습니다.
     const rooms = await this.chatRoomRepository
       .createQueryBuilder('room')
-      .addSelect((subQuery) => {
-        return subQuery
-          .select('message.content')
-          .from(ChatMessage, 'message')
-          .where('message.chatRoom.id = room.id')
-          .orderBy('message.createdAt', 'DESC')
-          .limit(1);
-      }, 'lastMessageContent')
-      .addSelect((subQuery) => {
-        return subQuery
-          .select('message.createdAt')
-          .from(ChatMessage, 'message')
-          .where('message.chatRoom.id = room.id')
-          .orderBy('message.createdAt', 'DESC')
-          .limit(1);
-      }, 'lastMessageCreatedAt')
-      .addSelect((subQuery) => {
-        return subQuery
-          .select('COUNT(*)')
-          .from(ChatMessage, 'message')
-          .leftJoin(
-            ReadReceipt,
-            'receipt',
-            'receipt.messageId = message.id AND receipt.userId = :userId',
-          )
-          .where('message.chatRoom.id = room.id')
-          .andWhere('message.senderId != :userId')
-          .andWhere('receipt.id IS NULL');
-      }, 'unreadCount')
       .innerJoin(
         'room.participants',
         'participant',
         'participant.userId = :userId AND participant.isActive = true',
+        { userId },
       )
       .leftJoinAndSelect('room.participants', 'allParticipants')
       .leftJoinAndSelect('allParticipants.user', 'participantUser')
       .leftJoinAndSelect('room.usedBookSale', 'sale')
       .leftJoinAndSelect('sale.book', 'book')
-      .where('participant.userId = :userId', { userId })
-      .orderBy('lastMessageCreatedAt', 'DESC')
-      .getRawAndEntities();
+      .orderBy('room.updatedAt', 'DESC')
+      .getMany();
 
-    const roomEntities = rooms.entities.map((room, index) => {
-      const raw = rooms.raw[index];
-      return {
-        ...room,
-        lastMessage: raw.lastMessageContent
-          ? {
-              content: raw.lastMessageContent,
-              createdAt: raw.lastMessageCreatedAt,
-            }
-          : null,
-        unreadCount: parseInt(raw.unreadCount, 10) || 0,
-      };
+    // 2. 각 채팅방에 대한 추가 정보(마지막 메시지, 안 읽은 개수)를 계산합니다.
+    const roomsWithDetails = await Promise.all(
+      rooms.map(async (room) => {
+        // 마지막 메시지 조회
+        const lastMessage = await this.chatMessageRepository.findOne({
+          where: { chatRoom: { id: room.id } },
+          order: { createdAt: 'DESC' },
+          relations: ['sender'],
+        });
+
+        // 안 읽은 메시지 개수 조회 (ReadReceipt 테이블 기준)
+        const unreadCount = await this.chatMessageRepository
+          .createQueryBuilder('message')
+          .leftJoin(
+            'message.readReceipts',
+            'receipt',
+            'receipt.userId = :userId',
+            { userId },
+          )
+          .where('message.chatRoom.id = :roomId', { roomId: room.id })
+          .andWhere('message.sender.id != :userId', { userId })
+          .andWhere('receipt.id IS NULL') // 내가 읽음 기록을 남기지 않은 메시지
+          .getCount();
+
+        return {
+          ...room,
+          lastMessage,
+          unreadCount,
+        };
+      }),
+    );
+
+    // 마지막 메시지 최신순으로 다시 정렬
+    roomsWithDetails.sort((a, b) => {
+      if (!a.lastMessage) return 1;
+      if (!b.lastMessage) return -1;
+      return (
+        b.lastMessage.createdAt.getTime() - a.lastMessage.createdAt.getTime()
+      );
     });
 
-    return roomEntities;
+    return roomsWithDetails;
   }
 
   /**

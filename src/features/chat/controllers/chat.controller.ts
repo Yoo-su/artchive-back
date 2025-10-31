@@ -41,12 +41,12 @@ export class ChatController {
    * 특정 판매글에 대한 채팅방을 찾거나 생성하는 API
    */
   @Post('rooms')
-  findOrCreateRoom(
+  getChatRoom(
     @Body('saleId', ParseIntPipe) saleId: number,
     @Req() req: Request,
   ) {
     const buyerId = req.user.id;
-    return this.chatService.findOrCreateRoom(saleId, buyerId);
+    return this.chatService.getChatRoom(saleId, buyerId);
   }
 
   /**
