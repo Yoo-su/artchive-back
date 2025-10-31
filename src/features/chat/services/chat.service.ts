@@ -56,6 +56,7 @@ export class ChatService {
       })
       .where('room.usedBookSale.id = :saleId', { saleId })
       .leftJoinAndSelect('room.participants', 'allParticipants')
+      .leftJoinAndSelect('allParticipants.user', 'user')
       .getOne();
 
     if (existingRoom) {
@@ -67,6 +68,23 @@ export class ChatService {
         await this.chatParticipantRepository.save(participantsToUpdate);
         existingRoom.updatedAt = new Date();
         await this.chatRoomRepository.save(existingRoom);
+
+        // 다시 참여한 유저에 대해 시스템 메시지 생성 및 이벤트 전송
+        for (const participant of participantsToUpdate) {
+          const systemMessage = this.chatMessageRepository.create({
+            chatRoom: { id: existingRoom.id },
+            content: `${participant.user.nickname}님이 다시 참여했습니다.`,
+            sender: null, // 시스템 메시지
+          });
+          await this.chatMessageRepository.save(systemMessage);
+
+          this.chatGateway.server
+            .to(String(existingRoom.id))
+            .emit('userRejoined', {
+              roomId: existingRoom.id,
+              message: systemMessage,
+            });
+        }
       }
 
       // 유저가 나갔다가 다시 들어온 경우, 필요한 관계들이 로드되지 않았을 수 있으므로 다시 조회합니다.
