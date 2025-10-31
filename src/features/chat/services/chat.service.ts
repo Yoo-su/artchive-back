@@ -93,8 +93,24 @@ export class ChatService {
     // 새 채팅방 생성 후 구매자와 판매자를 웹소켓 룸에 참여시킵니다.
     this.chatGateway.joinRoom([buyerId, sellerId], newRoom.id);
 
+    // 생성된 채팅방 정보를 다시 조회하여 participants 정보를 포함시킵니다.
+    const createdRoom = await this.chatRoomRepository.findOne({
+      where: { id: newRoom.id },
+      relations: [
+        'participants',
+        'participants.user',
+        'usedBookSale',
+        'usedBookSale.book',
+      ],
+    });
+
+    if (!createdRoom) {
+      // 이 경우는 거의 발생하지 않지만, 만약을 대비한 에러 처리
+      throw new NotFoundException('Failed to retrieve the created chat room.');
+    }
+
     // 생성된 채팅방 정보를 반환합니다.
-    return newRoom;
+    return createdRoom;
   }
 
   /**
