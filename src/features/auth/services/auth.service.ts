@@ -4,6 +4,7 @@ import { UserService } from '@/features/user/services/user.service';
 import { SocialLoginDto } from '../dtos/social-login.dto';
 import { User } from '@/features/user/entities/user.entity';
 import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -17,7 +18,7 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         { sub: userId, nickname },
-        { secret: process.env.JWT_SECRET, expiresIn: '1h' },
+        { secret: process.env.JWT_SECRET, expiresIn: '1s' },
       ),
       this.jwtService.signAsync(
         { sub: userId, nickname },
@@ -53,12 +54,13 @@ export class AuthService {
       throw new UnauthorizedException('Access Denied');
     }
 
-    const isRefreshTokenMatching =
-      refreshToken === user.currentHashedRefreshToken;
+    const isRefreshTokenMatching = await bcrypt.compare(
+      refreshToken,
+      user.currentHashedRefreshToken,
+    );
     if (!isRefreshTokenMatching) {
       throw new UnauthorizedException('Access Denied');
     }
-
     const tokens = await this.getTokens(user.id, user.nickname);
     await this.userService.setCurrentRefreshToken(tokens.refreshToken, user.id);
     return tokens;

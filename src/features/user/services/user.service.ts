@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { SocialLoginDto } from '@/features/auth/dtos/social-login.dto';
 import { UsedBookSale } from '@/features/book/entities/used-book-sale.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -31,9 +32,10 @@ export class UserService {
   }
 
   async setCurrentRefreshToken(refreshToken: string, userId: number) {
-    // 실제 프로덕션에서는 bcrypt.hash 등으로 해시하여 저장해야 합니다.
+    const salt = await bcrypt.genSalt();
+    const currentHashedRefreshToken = await bcrypt.hash(refreshToken, salt);
     await this.userRepository.update(userId, {
-      currentHashedRefreshToken: refreshToken,
+      currentHashedRefreshToken,
     });
   }
 
