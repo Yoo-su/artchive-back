@@ -14,10 +14,10 @@ export class AuthController {
 
   @Post('refresh')
   @UseGuards(AuthGuard('jwt-refresh'))
-  refreshTokens(@Req() req) {
+  refresh(@Req() req) {
     const userId = req.user.sub;
     const refreshToken = req.headers.authorization.split(' ')[1];
-    return this.authService.refreshToken(userId, refreshToken);
+    return this.authService.refresh(userId, refreshToken);
   }
 
   @Get('profile')
