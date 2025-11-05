@@ -21,7 +21,8 @@ type AckCallback = (response: {
 
 @WebSocketGateway({
   cors: {
-    origin: '*', // 실제 프로덕션에서는 프론트엔드 주소로 제한
+    origin: process.env.CLIENT_DOMAIN || 'http://localhost:3000',
+    credentials: true,
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
