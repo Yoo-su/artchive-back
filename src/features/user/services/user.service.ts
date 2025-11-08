@@ -24,19 +24,15 @@ export class UserService {
 
   async createUser(socialLoginDto: SocialLoginDto): Promise<User> {
     const newUser = this.userRepository.create(socialLoginDto);
-    return this.userRepository.save(newUser);
+    return await this.userRepository.save(newUser);
+  }
+
+  async updateUser(user: User): Promise<User> {
+    return await this.userRepository.save(user);
   }
 
   async findById(id: number): Promise<User | null> {
     return this.userRepository.findOne({ where: { id } });
-  }
-
-  async setCurrentRefreshToken(refreshToken: string, userId: number) {
-    const salt = await bcrypt.genSalt();
-    const currentHashedRefreshToken = await bcrypt.hash(refreshToken, salt);
-    await this.userRepository.update(userId, {
-      currentHashedRefreshToken,
-    });
   }
 
   /**

@@ -20,7 +20,7 @@ export class User {
   @Column()
   provider: string;
 
-  @Column({ name: 'provider_id' })
+  @Column({ name: 'providerId' })
   providerId: string;
 
   @Column({ unique: true, nullable: true })
@@ -29,16 +29,13 @@ export class User {
   @Column()
   nickname: string;
 
-  @Column({ name: 'profile_image_url', nullable: true })
+  @Column({ name: 'profileImageUrl', nullable: true })
   profileImageUrl: string;
 
-  @Column({ name: 'current_hashed_refresh_token', nullable: true })
-  currentHashedRefreshToken: string;
-
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt: Date;
 
   @OneToMany(() => UsedBookSale, (sale) => sale.user)

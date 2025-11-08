@@ -1,9 +1,11 @@
 import { NestFactory } from '@nestjs/core';
+import * as cookieParser from 'cookie-parser';
 import { DataSource } from 'typeorm';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.use(cookieParser());
   app.enableCors({
     origin: process.env.CLIENT_DOMAIN || 'http://localhost:3000',
     credentials: true,
