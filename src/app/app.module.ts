@@ -25,7 +25,7 @@ import { LlmModule } from '@/features/llm/llm.module';
         type: 'postgres',
         url: configService.get<string>('DATABASE_URL'),
         entities: [User, Book, UsedBookSale],
-        synchronize: configService.get<string>('NODE_ENV') !== 'production', // 개발 환경에서만 true로 설정
+        synchronize: true, // 개발 환경에서만 true로 설정
         autoLoadEntities: true,
         extra: {
           max: 5,
