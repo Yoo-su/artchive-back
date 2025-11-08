@@ -9,7 +9,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { Response } from 'express';
+import { CookieOptions, Response } from 'express';
 
 import { AuthService } from '../services/auth.service';
 import { ConfigService } from '@nestjs/config';
@@ -34,19 +34,18 @@ export class AuthController {
       req.user,
     );
 
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = this.configService.get('NODE_ENV') === 'production';
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 60 * 60 * 24 * 1,
+      maxAge: 15 * 60 * 1000,
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'none' : 'lax',
-      path: '/',
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
@@ -66,19 +65,19 @@ export class AuthController {
       req.user,
     );
 
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = this.configService.get('NODE_ENV') === 'production';
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 60 * 60 * 24 * 1,
+      maxAge: 15 * 60 * 1000,
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
     });
 
     res.redirect(this.configService.get('CLIENT_DOMAIN') ?? '');
@@ -87,8 +86,20 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    const isProduction = this.configService.get('NODE_ENV') === 'production';
+    const cookieOptions: CookieOptions = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+    };
+    res.clearCookie('accessToken', {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000,
+    });
+    res.clearCookie('refreshToken', {
+      ...cookieOptions,
+      maxAge: 60 * 60 * 24 * 7,
+    });
   }
 
   @Post('refresh')
@@ -98,7 +109,7 @@ export class AuthController {
     const { sub: userId, nickname } = req.user;
     const { accessToken } = await this.authService.refresh(userId, nickname);
 
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = this.configService.get('NODE_ENV') === 'production';
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: isProduction,
