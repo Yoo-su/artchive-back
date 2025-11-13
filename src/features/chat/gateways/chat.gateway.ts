@@ -10,10 +10,11 @@ import {
 import { Server, Socket } from 'socket.io';
 import { ChatService } from '../services/chat.service';
 import { User } from '@/features/user/entities/user.entity';
-import { UseGuards, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '@/features/user/services/user.service';
 import * as cookie from 'cookie';
+import { JwtPayload } from '@/features/auth/types/jwt-payload.type';
 
 type AckCallback = (response: {
   status: 'ok' | 'error';
@@ -54,9 +55,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       // JWT 검증
-      const payload = await this.jwtService.verifyAsync(accessToken, {
-        secret: process.env.JWT_SECRET,
-      });
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(
+        accessToken,
+        {
+          secret: process.env.JWT_SECRET,
+        },
+      );
 
       // 사용자 조회
       const user = await this.userService.findById(payload.sub);
@@ -67,7 +71,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      // client.data에 user 저장
       client.data.user = user;
 
       // 유저 매핑
@@ -90,19 +93,28 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  joinRoom(userIds: number[], roomId: number) {
+  async joinRoom(userIds: number[], roomId: number) {
     const roomIdStr = String(roomId);
-    userIds.forEach((userId) => {
+
+    const joinPromises = userIds.map(async (userId) => {
       const userSocket = this.connectedUsers.get(userId);
       if (userSocket) {
-        userSocket.join(roomIdStr);
-        this.logger.log(
-          `User ${userId} (Client ${userSocket.id}) joined room ${roomIdStr}`,
-        );
+        try {
+          await userSocket.join(roomIdStr);
+          this.logger.log(
+            `User ${userId} (Client ${userSocket.id}) joined room ${roomIdStr}`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `Failed to join room ${roomIdStr} for user ${userId}: ${error.message}`,
+          );
+        }
       } else {
         this.logger.warn(`User ${userId} is not connected.`);
       }
     });
+
+    await Promise.all(joinPromises);
   }
 
   @SubscribeMessage('sendMessage')
@@ -135,13 +147,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('subscribeToAllRooms')
-  handleSubscribeToAllRooms(
+  async andleSubscribeToAllRooms(
     @MessageBody() roomIds: number[],
     @ConnectedSocket() client: Socket,
   ) {
     if (!Array.isArray(roomIds)) return;
     const roomIdsAsStrings = roomIds.map(String);
-    client.join(roomIdsAsStrings);
+    await client.join(roomIdsAsStrings);
     this.logger.log(
       `Client ${client.id} subscribed to rooms: [${roomIdsAsStrings.join(
         ', ',

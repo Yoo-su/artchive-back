@@ -3,7 +3,6 @@ import {
   Post,
   Body,
   UseGuards,
-  Req,
   Patch,
   Param,
   ParseIntPipe,
@@ -16,10 +15,11 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { BookService } from '../services/book.service';
 import { CreateBookSaleDto } from '../dtos/create-book-sale.dto';
-import { Request } from 'express';
 import { UpdateSaleStatusDto } from '../../user/dtos/update-sale-status.dto';
 import { GetBookSalesQueryDto } from '../dtos/get-book-sales-query.dto';
 import { UpdateBookSaleDto } from '../dtos/update-book-sale.dto';
+import { CurrentUser } from '@/features/user/decorators/current-user.decorator';
+import { User } from '@/features/user/entities/user.entity';
 
 @Controller('book')
 export class BookController {
@@ -29,9 +29,9 @@ export class BookController {
   @UseGuards(AuthGuard('jwt'))
   async createUsedBookSale(
     @Body() createBookSaleDto: CreateBookSaleDto,
-    @Req() req: Request,
+    @CurrentUser() user: User,
   ) {
-    const userId = (req as any).user.id; // JwtStrategy에서 반환된 user 객체의 id
+    const userId = user.id;
     const newSale = await this.bookService.createUsedBookSale(
       createBookSaleDto,
       userId,
@@ -51,10 +51,10 @@ export class BookController {
   @UseGuards(AuthGuard('jwt'))
   async updateBookSaleStatus(
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: Request,
+    @CurrentUser() user: User,
     @Body() updateSaleStatusDto: UpdateSaleStatusDto,
   ) {
-    const userId = (req.user as any).id;
+    const userId = user.id;
     const updatedSale = await this.bookService.updateSaleStatus(
       id,
       userId,
@@ -99,10 +99,10 @@ export class BookController {
   @UseGuards(AuthGuard('jwt'))
   async updateBookSale(
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: Request,
+    @CurrentUser() user: User,
     @Body() updateBookSaleDto: UpdateBookSaleDto,
   ) {
-    const userId = (req.user as any).id;
+    const userId = user.id;
     const updatedSale = await this.bookService.updateUsedBookSale(
       id,
       userId,
@@ -122,9 +122,9 @@ export class BookController {
   @HttpCode(HttpStatus.NO_CONTENT) // 성공 시 204 No Content 응답
   async deleteBookSale(
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: Request,
+    @CurrentUser() user: User,
   ) {
-    const userId = (req.user as any).id;
+    const userId = user.id;
     await this.bookService.deleteUsedBookSale(id, userId);
     return;
   }
