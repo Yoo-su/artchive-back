@@ -125,7 +125,7 @@ export class ChatService {
     ]);
 
     // 새 채팅방 생성 후 구매자와 판매자를 웹소켓 룸에 참여시킵니다.
-    this.chatGateway.joinRoom([buyerId, sellerId], newRoom.id);
+    await this.chatGateway.joinRoom([buyerId, sellerId], newRoom.id);
 
     // 생성된 채팅방 정보를 다시 조회하여 participants 정보를 포함시킵니다.
     const createdRoom = await this.chatRoomRepository.findOne({

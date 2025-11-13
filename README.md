@@ -34,31 +34,31 @@ Artchive-back은 NestJS 기반의 백엔드 서버로, 소셜 로그인, 도서 
 
 ## API 엔드포인트
 
-| 기능 (Feature) | 엔드포인트 (Endpoint) | HTTP 메소드 | 설명 (Description) | 인증 (Authentication) |
-| --- | --- | --- | --- | --- |
-| **App** | `/` | `GET` | 서버 상태 확인 | 없음 |
-| **Auth** | `/auth/naver` | `GET` | 네이버 OAuth2 로그인 시작 | 없음 |
-| | `/auth/naver/callback` | `GET` | 네이버 OAuth2 콜백 처리 | 없음 |
-| | `/auth/kakao` | `GET` | 카카오 OAuth2 로그인 시작 | 없음 |
-| | `/auth/kakao/callback` | `GET` | 카카오 OAuth2 콜백 처리 | 없음 |
-| | `/auth/logout` | `POST` | 로그아웃 (토큰 제거) | 없음 |
-| | `/auth/refresh` | `POST` | Access Token 갱신 | JWT (Refresh Token) |
-| | `/auth/user` | `GET` | 현재 로그인된 사용자 정보 조회 | JWT |
-| **Book** | `/book/sale` | `POST` | 중고 도서 판매글 생성 | JWT |
-| | `/book/sales/:id/status` | `PATCH` | 판매글 상태 업데이트 | JWT |
-| | `/book/sales/recent` | `GET` | 최근 판매글 목록 조회 | 없음 |
-| | `/book/sales/:id` | `GET` | 판매글 상세 조회 | 없음 |
-| | `/book/:isbn/sales` | `GET` | 특정 ISBN의 판매글 목록 조회 | 없음 |
-| | `/book/sales/:id` | `PATCH` | 판매글 정보 수정 | JWT |
-| | `/book/sales/:id` | `DELETE` | 판매글 삭제 | JWT |
-| **Chat** | `/chat/rooms` | `GET` | 내 채팅방 목록 조회 | JWT |
-| | `/chat/rooms/:roomId/messages` | `GET` | 특정 채팅방 메시지 조회 | JWT |
-| | `/chat/rooms` | `POST` | 판매글에 대한 채팅방 생성 또는 조회 | JWT |
-| | `/chat/rooms/:roomId/read` | `PATCH` | 채팅방 메시지 읽음 처리 | JWT |
-| | `/chat/rooms/:roomId` | `DELETE` | 채팅방 나가기 | JWT |
-| **LLM** | `/llm/book-summary` | `POST` | AI를 이용한 도서 요약 생성 | 없음 |
-| **User** | `/user/me` | `GET` | 내 프로필 정보 조회 | JWT |
-| | `/user/my-sales` | `GET` | 내가 등록한 판매글 목록 조회 | JWT |
+| 기능 (Feature) | 엔드포인트 (Endpoint)          | HTTP 메소드 | 설명 (Description)                  | 인증 (Authentication) |
+| -------------- | ------------------------------ | ----------- | ----------------------------------- | --------------------- |
+| **App**        | `/`                            | `GET`       | 서버 상태 확인                      | 없음                  |
+| **Auth**       | `/auth/naver`                  | `GET`       | 네이버 OAuth2 로그인 시작           | 없음                  |
+|                | `/auth/naver/callback`         | `GET`       | 네이버 OAuth2 콜백 처리             | 없음                  |
+|                | `/auth/kakao`                  | `GET`       | 카카오 OAuth2 로그인 시작           | 없음                  |
+|                | `/auth/kakao/callback`         | `GET`       | 카카오 OAuth2 콜백 처리             | 없음                  |
+|                | `/auth/logout`                 | `POST`      | 로그아웃 (토큰 제거)                | 없음                  |
+|                | `/auth/refresh`                | `POST`      | Access Token 갱신                   | JWT (Refresh Token)   |
+|                | `/auth/user`                   | `GET`       | 현재 로그인된 사용자 정보 조회      | JWT                   |
+| **Book**       | `/book/sale`                   | `POST`      | 중고 도서 판매글 생성               | JWT                   |
+|                | `/book/sales/:id/status`       | `PATCH`     | 판매글 상태 업데이트                | JWT                   |
+|                | `/book/sales/recent`           | `GET`       | 최근 판매글 목록 조회               | 없음                  |
+|                | `/book/sales/:id`              | `GET`       | 판매글 상세 조회                    | 없음                  |
+|                | `/book/:isbn/sales`            | `GET`       | 특정 ISBN의 판매글 목록 조회        | 없음                  |
+|                | `/book/sales/:id`              | `PATCH`     | 판매글 정보 수정                    | JWT                   |
+|                | `/book/sales/:id`              | `DELETE`    | 판매글 삭제                         | JWT                   |
+| **Chat**       | `/chat/rooms`                  | `GET`       | 내 채팅방 목록 조회                 | JWT                   |
+|                | `/chat/rooms/:roomId/messages` | `GET`       | 특정 채팅방 메시지 조회             | JWT                   |
+|                | `/chat/rooms`                  | `POST`      | 판매글에 대한 채팅방 생성 또는 조회 | JWT                   |
+|                | `/chat/rooms/:roomId/read`     | `PATCH`     | 채팅방 메시지 읽음 처리             | JWT                   |
+|                | `/chat/rooms/:roomId`          | `DELETE`    | 채팅방 나가기                       | JWT                   |
+| **LLM**        | `/llm/book-summary`            | `POST`      | AI를 이용한 도서 요약 생성          | 없음                  |
+| **User**       | `/user/me`                     | `GET`       | 내 프로필 정보 조회                 | JWT                   |
+|                | `/user/my-sales`               | `GET`       | 내가 등록한 판매글 목록 조회        | JWT                   |
 
 ## 사용 기술
 

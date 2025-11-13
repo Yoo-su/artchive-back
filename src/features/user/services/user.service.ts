@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { SocialLoginDto } from '@/features/auth/dtos/social-login.dto';
 import { UsedBookSale } from '@/features/book/entities/used-book-sale.entity';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -43,8 +42,8 @@ export class UserService {
   async findMySales(userId: number): Promise<UsedBookSale[]> {
     return this.usedBookSaleRepository.find({
       where: { user: { id: userId } },
-      relations: ['book', 'user'], // 판매글과 연관된 책과 유저 정보를 함께 불러옵니다.
-      order: { createdAt: 'DESC' }, // 최신순으로 정렬
+      relations: ['book', 'user'],
+      order: { createdAt: 'DESC' },
     });
   }
 }

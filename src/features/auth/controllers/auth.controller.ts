@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   UseGuards,
-  Req,
   Res,
   HttpCode,
   HttpStatus,
@@ -18,6 +17,7 @@ import { getCookieOptions } from '@/shared/utils/get-cookie-options';
 import { TOKEN_EXPIRY } from '../auth.constants';
 import { CurrentUser } from '@/features/user/decorators/current-user.decorator';
 import { COOKIE_NAMES } from '@/shared/constants/cookie.constant';
+import { User } from '@/features/user/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -61,7 +61,7 @@ export class AuthController {
 
   @Get('naver/callback')
   @UseGuards(AuthGuard('naver'))
-  async naverLoginCallback(@CurrentUser() user, @Res() res: Response) {
+  async naverLoginCallback(@CurrentUser() user: User, @Res() res: Response) {
     const { accessToken, refreshToken } =
       await this.authService.socialLogin(user);
 
@@ -77,7 +77,7 @@ export class AuthController {
 
   @Get('kakao/callback')
   @UseGuards(AuthGuard('kakao'))
-  async kakaoLoginCallback(@CurrentUser() user, @Res() res: Response) {
+  async kakaoLoginCallback(@CurrentUser() user: User, @Res() res: Response) {
     const { accessToken, refreshToken } =
       await this.authService.socialLogin(user);
 
@@ -87,7 +87,7 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async logout(@Res({ passthrough: true }) res: Response) {
+  logout(@Res({ passthrough: true }) res: Response) {
     const isProduction = this.isProduction();
     const cookieOptions = getCookieOptions(isProduction);
 
@@ -99,22 +99,16 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt-refresh'))
   @HttpCode(HttpStatus.NO_CONTENT)
   async refresh(
-    @CurrentUser() user,
+    @CurrentUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ) {
     const isProduction = this.isProduction();
-    const { sub: userId, nickname } = user;
+    const { id: userId, nickname } = user;
     const { accessToken } = await this.authService.refresh(userId, nickname);
 
     res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, {
       ...getCookieOptions(isProduction),
       maxAge: TOKEN_EXPIRY.ACCESS_TOKEN,
     });
-  }
-
-  @Get('user')
-  @UseGuards(AuthGuard('jwt'))
-  getUser(@CurrentUser() user) {
-    return user;
   }
 }

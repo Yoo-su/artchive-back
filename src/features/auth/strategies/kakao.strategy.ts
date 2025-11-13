@@ -20,17 +20,15 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
   async validate(
     accessToken: string,
     refreshToken: string,
-    profile: any, // 'any' 대신 더 구체적인 타입을 정의할 수 있습니다.
+    profile: Profile,
     done: (error: any, user?: any, info?: any) => void,
   ) {
     try {
-      // 1. profile 객체에서 원하는 정보를 추출합니다.
+      const { id, username: name, profile_image: profileImg } = profile._json;
       const provider = 'kakao';
-      const providerId = profile.id;
-      const username = profile.username || profile._json.properties.nickname;
-      const profileImg = profile._json.properties.profile_image;
+      const providerId = id;
+      const username = name;
 
-      // 2. 이 정보로 AuthService를 통해 유저를 찾거나 생성합니다.
       const user = await this.authService.validateUser({
         provider,
         providerId,
