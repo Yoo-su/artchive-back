@@ -13,7 +13,6 @@ import { User } from '@/features/user/entities/user.entity';
 import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '@/features/user/services/user.service';
-import * as cookie from 'cookie';
 import { JwtPayload } from '@/features/auth/types/jwt-payload.type';
 
 type AckCallback = (response: {
@@ -25,7 +24,6 @@ type AckCallback = (response: {
 @WebSocketGateway({
   cors: {
     origin: process.env.CLIENT_DOMAIN || 'http://localhost:3000',
-    credentials: true,
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -44,12 +42,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // handleConnection에서 직접 인증 처리
   async handleConnection(client: Socket) {
     try {
-      // 쿠키에서 토큰 추출
-      const cookies = cookie.parse(client.handshake.headers.cookie || '');
-      const accessToken = cookies.accessToken;
+      const authHeader = client.handshake.headers.authorization;
 
-      if (!accessToken) {
-        this.logger.warn('Missing accessToken in cookies');
+      if (!authHeader) {
+        this.logger.warn('Missing authorization header');
+        client.disconnect(true);
+        return;
+      }
+
+      const [type, accessToken] = authHeader.split(' ');
+
+      if (type !== 'Bearer' || !accessToken) {
+        this.logger.warn('Invalid token format');
         client.disconnect(true);
         return;
       }
