@@ -20,6 +20,7 @@ import { GetBookSalesQueryDto } from '../dtos/get-book-sales-query.dto';
 import { UpdateBookSaleDto } from '../dtos/update-book-sale.dto';
 import { CurrentUser } from '@/features/user/decorators/current-user.decorator';
 import { User } from '@/features/user/entities/user.entity';
+import { QueryBookSaleDto } from '../dtos/query-book-sale.dto';
 
 @Controller('book')
 export class BookController {
@@ -40,6 +41,15 @@ export class BookController {
       success: true,
       sale: newSale,
     };
+  }
+
+  /**
+   * 필터링/검색/정렬 조건에 따라 중고책 판매글 목록을 조회합니다.
+   * @param query - 검색, 필터링, 정렬, 페이지네이션 DTO
+   */
+  @Get('sales')
+  searchSales(@Query() query: QueryBookSaleDto) {
+    return this.bookService.searchSales(query);
   }
 
   /**

@@ -12,6 +12,7 @@ import { BookInfoDto } from '../dtos/book-info.dto';
 import { UserService } from '../../user/services/user.service';
 import { GetBookSalesQueryDto } from '../dtos/get-book-sales-query.dto';
 import { UpdateBookSaleDto } from '../dtos/update-book-sale.dto';
+import { QueryBookSaleDto } from '../dtos/query-book-sale.dto';
 
 @Injectable()
 export class BookService {
@@ -93,6 +94,92 @@ export class BookService {
       throw new NotFoundException(`Sale with ID ${id} not found.`);
     }
     return sale;
+  }
+
+  async searchSales(queryDto: QueryBookSaleDto) {
+    const {
+      page = 1,
+      limit = 12,
+      search,
+      city,
+      district,
+      minPrice,
+      maxPrice,
+      status,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC',
+    } = queryDto;
+
+    const queryBuilder = this.usedBookSaleRepository
+      .createQueryBuilder('sale')
+      .leftJoinAndSelect('sale.user', 'user')
+      .leftJoinAndSelect('sale.book', 'book')
+      .select([
+        'sale.id',
+        'sale.title',
+        'sale.price',
+        'sale.status',
+        'sale.createdAt',
+        'sale.updatedAt',
+        'sale.imageUrls',
+        'sale.city',
+        'sale.district',
+        'user.id',
+        'user.nickname',
+        'user.profileImageUrl',
+        'book',
+      ]);
+
+    // Search condition
+    if (search) {
+      queryBuilder.andWhere(
+        '(sale.title LIKE :search OR sale.content LIKE :search OR book.title LIKE :search OR book.author LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    // Location filter
+    if (city) {
+      queryBuilder.andWhere('sale.city = :city', { city });
+    }
+    if (district) {
+      queryBuilder.andWhere('sale.district = :district', { district });
+    }
+
+    // Price filter
+    if (minPrice !== undefined) {
+      queryBuilder.andWhere('sale.price >= :minPrice', { minPrice });
+    }
+    if (maxPrice !== undefined) {
+      queryBuilder.andWhere('sale.price <= :maxPrice', { maxPrice });
+    }
+
+    // Status filter
+    if (status && status.length > 0) {
+      // Defensively ensure 'status' is an array before passing to TypeORM
+      const statusArray = Array.isArray(status) ? status : [status];
+      queryBuilder.andWhere('sale.status IN (:...status)', {
+        status: statusArray,
+      });
+    }
+
+    // Sorting
+    queryBuilder.orderBy(`sale.${sortBy}`, sortOrder);
+
+    // Pagination
+    queryBuilder.skip((page - 1) * limit).take(limit);
+
+    const [sales, total] = await queryBuilder.getManyAndCount();
+
+    const hasNextPage = page * limit < total;
+
+    return {
+      sales,
+      total,
+      page,
+      limit,
+      hasNextPage,
+    };
   }
 
   /**
