@@ -151,7 +151,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('subscribeToAllRooms')
-  async andleSubscribeToAllRooms(
+  async handleSubscribeToAllRooms(
     @MessageBody() roomIds: number[],
     @ConnectedSocket() client: Socket,
   ) {
