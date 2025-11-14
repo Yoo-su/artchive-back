@@ -5,6 +5,7 @@ import { UserService } from '@/features/user/services/user.service';
 import { User } from '@/features/user/entities/user.entity';
 import { ConfigService } from '@nestjs/config';
 import { JwtPayload } from '../types/jwt-payload.type';
+import { TOKEN_EXPIRY } from '../auth.constants';
 
 @Injectable()
 export class AuthService {
@@ -39,11 +40,11 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: process.env.JWT_SECRET,
-        expiresIn: '15m',
+        expiresIn: TOKEN_EXPIRY.ACCESS_TOKEN,
       }),
       this.jwtService.signAsync(payload, {
         secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: '1d',
+        expiresIn: TOKEN_EXPIRY.REFRESH_TOKEN,
       }),
     ]);
     return { accessToken, refreshToken };
@@ -59,10 +60,6 @@ export class AuthService {
   }
 
   async refresh(userId: number, nickname: string) {
-    const accessToken = await this.jwtService.signAsync(
-      { sub: userId, nickname },
-      { secret: process.env.JWT_SECRET, expiresIn: '15m' },
-    );
-    return { accessToken };
+    return this.getTokens(userId, nickname);
   }
 }
