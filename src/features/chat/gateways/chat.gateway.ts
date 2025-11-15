@@ -17,6 +17,7 @@ import { ChatMessage } from '../entities/chat-message.entity';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '@/features/user/services/user.service';
 import { JwtPayload } from '@/features/auth/types/jwt-payload.type';
+import { ChatRoom } from '../entities/chat-room.entity';
 
 @UseGuards(SocketAuthGuard)
 @WebSocketGateway({
@@ -115,6 +116,25 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       roomId,
       message,
     });
+  }
+
+  /**
+   * 특정 유저에게 새로운 채팅방이 생성되었음을 알립니다.
+   * @param userId - 알림을 받을 유저의 ID
+   * @param room - 생성된 채팅방의 정보
+   */
+  notifyNewRoom(userId: number, room: ChatRoom) {
+    const userSocket = this.connectedUsers.get(userId);
+    if (userSocket) {
+      userSocket.emit('newChatRoom', room);
+      this.logger.log(
+        `Notified user ${userId} (Client ${userSocket.id}) of new room ${room.id}`,
+      );
+    } else {
+      this.logger.warn(
+        `User ${userId} is not connected. Cannot notify about new room.`,
+      );
+    }
   }
 
   @SubscribeMessage('sendMessage')
