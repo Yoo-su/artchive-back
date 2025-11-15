@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  UseGuards,
-  Res,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Get, Post, UseGuards, Res } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 
@@ -65,12 +57,6 @@ export class AuthController {
     url.searchParams.set('refreshToken', refreshToken);
     url.searchParams.set('user', JSON.stringify(userInfo));
     return res.redirect(url.toString());
-  }
-
-  @Post('logout')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  logout() {
-    return;
   }
 
   @Post('refresh')
