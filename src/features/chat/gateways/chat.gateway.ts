@@ -24,6 +24,7 @@ type AckCallback = (response: {
 @WebSocketGateway({
   cors: {
     origin: process.env.CLIENT_DOMAIN || 'http://localhost:3000',
+    credentials: true,
   },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -42,29 +43,24 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // handleConnection에서 직접 인증 처리
   async handleConnection(client: Socket) {
     try {
-      const authHeader = client.handshake.headers.authorization;
+      // auth 객체에서 토큰 가져오기 (우선순위)
+      const token =
+        client.handshake.auth?.token ||
+        client.handshake.headers.authorization?.split(' ')[1];
 
-      if (!authHeader) {
-        this.logger.warn('Missing authorization header');
-        client.disconnect(true);
-        return;
-      }
+      console.log('Token from auth:', client.handshake.auth?.token);
+      console.log('Token from header:', client.handshake.headers.authorization);
 
-      const [type, accessToken] = authHeader.split(' ');
-
-      if (type !== 'Bearer' || !accessToken) {
-        this.logger.warn('Invalid token format');
+      if (!token) {
+        this.logger.warn('Missing authorization token');
         client.disconnect(true);
         return;
       }
 
       // JWT 검증
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(
-        accessToken,
-        {
-          secret: process.env.JWT_SECRET,
-        },
-      );
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
+        secret: process.env.JWT_SECRET,
+      });
 
       // 사용자 조회
       const user = await this.userService.findById(payload.sub);
