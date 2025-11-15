@@ -78,12 +78,7 @@ export class ChatService {
           });
           await this.chatMessageRepository.save(systemMessage);
 
-          this.chatGateway.server
-            .to(String(existingRoom.id))
-            .emit('userRejoined', {
-              roomId: existingRoom.id,
-              message: systemMessage,
-            });
+          this.chatGateway.emitUserRejoined(existingRoom.id, systemMessage);
         }
       }
 
@@ -312,12 +307,6 @@ export class ChatService {
     });
     await this.chatMessageRepository.save(systemMessage);
 
-    // 4. 상대방에게 실시간으로 "userLeft" 이벤트 전송
-    this.chatGateway.server.to(String(roomId)).emit('userLeft', {
-      roomId,
-      message: systemMessage,
-    });
-
-    return { success: true, message: 'Successfully left the chat room.' };
+    return systemMessage;
   }
 }

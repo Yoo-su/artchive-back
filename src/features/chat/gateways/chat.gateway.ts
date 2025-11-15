@@ -6,26 +6,25 @@ import {
   ConnectedSocket,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from '../services/chat.service';
 import { User } from '@/features/user/entities/user.entity';
-import { Logger } from '@nestjs/common';
+import { Logger, UseGuards } from '@nestjs/common';
+import { SocketAuthGuard } from '../guards/socket-auth.guard';
+import { ChatMessage } from '../entities/chat-message.entity';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '@/features/user/services/user.service';
 import { JwtPayload } from '@/features/auth/types/jwt-payload.type';
 
-type AckCallback = (response: {
-  status: 'ok' | 'error';
-  message?: any;
-  error?: string;
-}) => void;
-
+@UseGuards(SocketAuthGuard)
 @WebSocketGateway({
   cors: {
     origin: process.env.CLIENT_DOMAIN || 'http://localhost:3000',
     credentials: true,
   },
+  namespace: 'chat',
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -40,44 +39,36 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly userService: UserService,
   ) {}
 
-  // handleConnection에서 직접 인증 처리
   async handleConnection(client: Socket) {
     try {
-      // auth 객체에서 토큰 가져오기 (우선순위)
       const token =
         client.handshake.auth?.token ||
         client.handshake.headers.authorization?.split(' ')[1];
 
-      console.log('Token from auth:', client.handshake.auth?.token);
-      console.log('Token from header:', client.handshake.headers.authorization);
-
       if (!token) {
-        this.logger.warn('Missing authorization token');
-        client.disconnect(true);
-        return;
+        throw new Error('Missing authorization token');
       }
 
-      // JWT 검증
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: process.env.JWT_SECRET,
       });
 
-      // 사용자 조회
       const user = await this.userService.findById(payload.sub);
-
       if (!user) {
-        this.logger.warn(`User with id ${payload.sub} not found`);
-        client.disconnect(true);
-        return;
+        throw new Error(`User with id ${payload.sub} not found`);
       }
 
       client.data.user = user;
 
-      // 유저 매핑
       this.connectedUsers.set(user.id, client);
       this.logger.log(`Client connected: ${client.id}, User ID: ${user.id}`);
+
+      client.emit('connected', {
+        message: 'Successfully connected to chat server.',
+      });
     } catch (error) {
       this.logger.error(`Authentication failed: ${error.message}`);
+      client.emit('error', new WsException(error.message));
       client.disconnect(true);
     }
   }
@@ -93,72 +84,97 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  /**
+   * 특정 유저들을 특정 소켓 룸에 참여시킵니다.
+   * ChatService에서 채팅방이 생성될 때 호출됩니다.
+   * @param userIds - 룸에 참여시킬 유저 ID 배열
+   * @param roomId - 참여할 룸 ID
+   */
   async joinRoom(userIds: number[], roomId: number) {
     const roomIdStr = String(roomId);
-
     const joinPromises = userIds.map(async (userId) => {
       const userSocket = this.connectedUsers.get(userId);
       if (userSocket) {
-        try {
-          await userSocket.join(roomIdStr);
-          this.logger.log(
-            `User ${userId} (Client ${userSocket.id}) joined room ${roomIdStr}`,
-          );
-        } catch (error) {
-          this.logger.error(
-            `Failed to join room ${roomIdStr} for user ${userId}: ${error.message}`,
-          );
-        }
+        await userSocket.join(roomIdStr);
+        this.logger.log(
+          `User ${userId} (Client ${userSocket.id}) joined room ${roomIdStr}`,
+        );
       } else {
         this.logger.warn(`User ${userId} is not connected.`);
       }
     });
-
     await Promise.all(joinPromises);
+  }
+
+  /**
+   * 유저가 채팅방에 다시 참여했음을 알립니다.
+   * ChatService에서 호출됩니다.
+   */
+  emitUserRejoined(roomId: number, message: ChatMessage) {
+    this.server.to(String(roomId)).emit('userRejoined', {
+      roomId,
+      message,
+    });
   }
 
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
     @MessageBody() data: { roomId: number; content: string },
     @ConnectedSocket() client: Socket,
-    ack: AckCallback,
   ) {
     const user = client.data.user as User;
     const { roomId, content } = data;
 
-    if (!user) {
-      const errorMsg = 'User is not authenticated. Cannot send message.';
-      this.logger.error(errorMsg);
-      if (ack) ack({ status: 'error', error: errorMsg });
-      return;
-    }
-
     try {
       const message = await this.chatService.saveMessage(content, roomId, user);
       this.server.to(String(roomId)).emit('newMessage', message);
-      if (ack) ack({ status: 'ok', message });
+      return { status: 'ok', message }; // ACK 대신 반환값으로 처리
     } catch (error) {
-      const errorMsg = `Failed to save message for user ${
-        user?.id || 'UNKNOWN'
-      } in room ${roomId}: ${error.message}`;
-      this.logger.error(errorMsg);
-      if (ack) ack({ status: 'error', error: error.message });
+      this.logger.error(
+        `Failed to save message for user ${user.id} in room ${roomId}: ${error.message}`,
+      );
+      throw new WsException(error.message); // WsException으로 에러 전달
     }
   }
 
-  @SubscribeMessage('subscribeToAllRooms')
-  async handleSubscribeToAllRooms(
+  @SubscribeMessage('joinRooms')
+  async handleJoinRooms(
     @MessageBody() roomIds: number[],
     @ConnectedSocket() client: Socket,
   ) {
-    if (!Array.isArray(roomIds)) return;
+    if (!Array.isArray(roomIds)) {
+      throw new WsException('Invalid roomIds. Must be an array of numbers.');
+    }
     const roomIdsAsStrings = roomIds.map(String);
     await client.join(roomIdsAsStrings);
     this.logger.log(
-      `Client ${client.id} subscribed to rooms: [${roomIdsAsStrings.join(
-        ', ',
-      )}]`,
+      `Client ${client.id} joined rooms: [${roomIdsAsStrings.join(', ')}]`,
     );
+    return { status: 'ok', joinedRooms: roomIds };
+  }
+
+  @SubscribeMessage('leaveRoom')
+  async handleLeaveRoom(
+    @MessageBody() data: { roomId: number },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const user = client.data.user as User;
+    const { roomId } = data;
+    try {
+      const systemMessage = await this.chatService.leaveRoom(roomId, user.id);
+      this.server.to(String(roomId)).emit('userLeft', {
+        roomId,
+        message: systemMessage,
+      });
+      await client.leave(String(roomId));
+      this.logger.log(`User ${user.id} left room ${roomId}`);
+      return { status: 'ok', message: `Successfully left room ${roomId}` };
+    } catch (error) {
+      this.logger.error(
+        `Failed to leave room ${roomId} for user ${user.id}: ${error.message}`,
+      );
+      throw new WsException(error.message);
+    }
   }
 
   @SubscribeMessage('startTyping')
@@ -177,6 +193,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { roomId: number },
     @ConnectedSocket() client: Socket,
   ) {
-    client.to(String(data.roomId)).emit('typing', { isTyping: false });
+    const user = client.data.user as User;
+    client
+      .to(String(data.roomId))
+      .emit('typing', { nickname: user.nickname, isTyping: false });
   }
 }
