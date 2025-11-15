@@ -138,6 +138,9 @@ export class ChatService {
       throw new NotFoundException('Failed to retrieve the created chat room.');
     }
 
+    // 판매자에게 새로운 채팅방이 생성되었음을 실시간으로 알립니다.
+    this.chatGateway.notifyNewRoom(sellerId, createdRoom);
+
     // 생성된 채팅방 정보를 반환합니다.
     return createdRoom;
   }
