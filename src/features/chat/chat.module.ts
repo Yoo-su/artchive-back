@@ -11,6 +11,7 @@ import { UserModule } from '../user/user.module';
 import { BookModule } from '../book/book.module';
 import { UsedBookSale } from '../book/entities/used-book-sale.entity';
 import { ReadReceipt } from './entities/read-receipt.entity';
+import { SocketAuthGuard } from './guards/socket-auth.guard';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { ReadReceipt } from './entities/read-receipt.entity';
     UserModule,
     BookModule,
   ],
-  providers: [ChatGateway, ChatService],
+  providers: [ChatGateway, ChatService, SocketAuthGuard],
   controllers: [ChatController],
 })
 export class ChatModule {}
